@@ -1,46 +1,12 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:wfapp/Model/CityWeather.dart';
-// import 'package:wfapp/Model/Weather.dart';
+import 'package:wfapp/modules/home_controller.dart';
+import 'package:get/get.dart';
 
-class MainHome extends StatefulWidget {
-  const MainHome({Key? key}) : super(key: key);
-  @override
-  State<MainHome> createState() => _MainHomeState();
-}
-
-class _MainHomeState extends State<MainHome> {
-  CityWeather? cityWeather;
-  String? cityName;
-
-  @override
-  void initState() {
-    super.initState();
-    if (cityName == null){
-      cityName = "London";
-    }
-    connectAPI();
-  }
-
-  // Connect to API
-  void connectAPI() async {
-    String apiKey = '841097aa103a32926ebbf1f717ef6b73';
-    try {
-      var response =
-      await Dio().get("https://api.openweathermap.org/data/2.5/weather?q=$cityName&appid=$apiKey");
-
-      Map<String, dynamic> responseData = response.data;
-      setState(() {
-        cityWeather = CityWeather.fromJson(responseData);
-      });
-    } catch (error) {
-      print('Error: $error');
-    }
-  }
+class MainHome extends StatelessWidget {
+  final HomeController controller = Get.put(HomeController());
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: Center(
         child: Column(
@@ -51,78 +17,118 @@ class _MainHomeState extends State<MainHome> {
               color: Colors.blueGrey,
               child: Row(
                 children: [
-                  IconButton(onPressed: () {
-                    connectAPI();
-                  }, icon: Icon(Icons.search,color: Colors.white)),
+                  IconButton(
+                    onPressed: () {
+                      controller.connectAPI();
+                    },
+                    icon: const Icon(Icons.search, color: Colors.white),
+                  ),
                   Expanded(
-                      child: TextField(
-                        onChanged: (value) {
-                          setState(() {
-                            cityName = value;
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Enter a city",
-                          border: InputBorder.none,
-                        ),
-                      )
+                    child: TextField(
+                      onChanged: (value) {
+                        controller.cityName!.value = value;
+                      },
+                      decoration: const InputDecoration(
+                        hintText: "Enter a city",
+                        border: InputBorder.none,
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            //End search city session
-            Container(
-              margin: EdgeInsets.only(bottom: 30.2),
+            // End search city session
+            Obx(() => Container(
+              margin: const EdgeInsets.only(bottom: 30.2),
               child: Column(
                 children: [
-                  if (cityWeather != null)
-                     Text('${cityWeather!.name ?? ""}', style: const TextStyle(fontSize: 60, color: Colors.deepOrange, fontWeight: FontWeight.bold)),
-                  Text('${cityWeather!.weather?[0].des ?? ""}', style: TextStyle(fontSize: 22.1, color: Colors.black26, fontWeight: FontWeight.bold),),
+                  if (controller.cityWeather.value != null)
+                    Text(
+                      '${controller.cityWeather.value!.name}',
+                      style: const TextStyle(
+                          fontSize: 60,
+                          color: Colors.deepOrange,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  Text(
+                    '${controller.cityWeather.value?.weather?[0].des}',
+                    style: const TextStyle(
+                        fontSize: 22.1,
+                        color: Colors.black26,
+                        fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
-          ),
-            //End city session
-            Container(
+            )),
+            // End city session
+            Obx(() => Container(
               padding: const EdgeInsets.all(24.0),
               color: Colors.indigo,
               child: Row(
                 children: [
-                  //Image session
-                  Column(
-                    children: <Widget>[
-                      if (cityWeather != null)
-                        if (cityWeather!.weather?[0].main == "Clouds")
-                          Image.asset('assets/heavycloud.png',height: 150, width: 150)
-                        else if (cityWeather!.weather?[0].main == "Rain")
-                          Image.asset('assets/heavyrain.png',height: 150, width: 150)
-                        else if (cityWeather!.weather?[0].main == "Clear")
-                          Image.asset('assets/clear.png',height: 150, width: 150)
-                        else Text("None display")
-                    ],
-
-                  ),
+                  // Text('${controller.cityWeather.value?.weather?[0].des}'),
+                  if (controller.cityWeather.value != null)
+                    // Text('${controller.cityWeather.value?.weather?[0].main}'),
+                    if (controller.cityWeather.value?.weather?[0].main == "Clouds")
+                      Image.asset(
+                        "assets/heavycloud.png",
+                        width: 150,
+                        height: 150,
+                      )
+                    else if (controller.cityWeather.value?.weather?[0].main == "Rain")
+                      Image.asset(
+                        "assets/heavyrain.png",
+                        width: 150,
+                        height: 150,
+                      )
+                    else if (controller.cityWeather.value?.weather?[0].main == "Clear")
+                        Image.asset(
+                          "assets/clear.png",
+                          width: 150,
+                          height: 150,
+                        ),
+                      // else
+                      //   Text("None display"),
                   Column(
                     children: [
-                      Text('${cityWeather!.main?.temp}',style: TextStyle(fontSize: 35, color: Colors.white, fontWeight: FontWeight.bold),),
+                      Obx(() => Text(
+                        '${controller.convertKelvinToCelsius(controller.cityWeather.value?.main?.temp)}°C',
+                        style: const TextStyle(
+                            fontSize: 35,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold),
+                      )),
                       Row(
                         children: [
                           Container(
-                            child: Text('Min: ${(cityWeather!.main?.tempMin)}', style: TextStyle(fontSize: 14.0, color: Colors.yellow, fontWeight: FontWeight.bold),),
-                            margin: EdgeInsets.only(right: 12.0, left: 24.0),
+                            margin: const EdgeInsets.only(right: 12.0, left: 24.0),
+                            child: Obx(() => Text(
+                              'Min: ${controller.convertKelvinToCelsius(controller.cityWeather.value?.main?.tempMin)}°C',
+                              style: const TextStyle(
+                                fontSize: 14.0,
+                                color: Colors.yellow,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )),
                           ),
-                          Container(
-                            child: Text('Max: ${cityWeather!.main?.tempMax}', style: TextStyle(fontSize: 14.0, color: Colors.greenAccent, fontWeight: FontWeight.bold),),
-                          )
+                          Obx(() => Text(
+                            'Max: ${controller.convertKelvinToCelsius(controller.cityWeather.value?.main?.tempMax)}°C',
+                            style: const TextStyle(
+                              fontSize: 14.0,
+                              color: Colors.greenAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ))
                         ],
                       )
                     ],
                   )
                 ],
-              )
-            ),
-                      ],
-                    )
               ),
-        );
+            ),
+            )],
+        ),
+      ),
+    );
   }
 }
